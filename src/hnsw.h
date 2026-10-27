@@ -31,7 +31,7 @@ class HNSW {
     std::mt19937 rng_;
 
     int randomLayer() {
-        std::uniform_real_distribution<float> u(0.0f, 1.0f);
+        std::uniform_real_distribution<float> u(0.00001f, 1.0f);
         float mult = 1.0f / std::log((float)M_);
         return (int)std::floor(-std::log(u(rng_)) * mult);
     }
@@ -112,7 +112,7 @@ class HNSW {
         node.nbrs[layer] = neighbors;
 
         for (int nid : neighbors) {
-            if (!graph_.count(nid)) continue;
+            if (nid == id || !graph_.count(nid)) continue;
             Node& other = graph_.at(nid);
             if ((int)other.nbrs.size() <= layer) other.nbrs.resize(layer + 1);
             auto& back = other.nbrs[layer];
@@ -123,7 +123,7 @@ class HNSW {
             if ((int)back.size() > maxM) {
                 std::vector<Neighbor> ranked;
                 for (int c : back)
-                    if (graph_.count(c))
+                    if (c != nid && graph_.count(c))
                         ranked.push_back({distance(other.item.emb, graph_.at(c).item.emb, metric_), c});
                 back = selectNeighbors(ranked, maxM);
             }
@@ -192,8 +192,13 @@ public:
 
         if (entryId_ == id) {
             entryId_ = -1;
-            for (auto& [nid, node] : graph_)
-                if (nid != id) { entryId_ = nid; topLayer_ = node.maxLayer; break; }
+            topLayer_ = -1;
+            for (auto& [nid, node] : graph_) {
+                if (nid != id && node.maxLayer > topLayer_) {
+                    entryId_ = nid;
+                    topLayer_ = node.maxLayer;
+                }
+            }
         }
         graph_.erase(id);
     }

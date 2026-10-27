@@ -14,19 +14,21 @@ namespace vdb {
 
 class KDTree {
 public:
-    KDTree(int dims, Metric metric)
-        : dims_(dims),
+    KDTree(int dims = 1, Metric metric = Metric::Cosine)
+        : dims_(dims > 0 ? dims : 1),
           metric_(metric),
           searchMetric_(metric == Metric::Manhattan ? Metric::Manhattan : Metric::Euclidean),
-          normalized_(metric == Metric::Cosine) {
-        if (dims <= 0) throw std::invalid_argument("dims must be >= 1");
-    }
+          normalized_(metric == Metric::Cosine) {}
 
     void build(const std::vector<VectorItem>& items) {
         entries_.clear();
+        root_.reset();
+        if (items.empty()) return;
+
+        dims_ = (int)items[0].emb.size();
         for (const auto& it : items) {
             if ((int)it.emb.size() != dims_)
-                throw std::invalid_argument("dimension mismatch");
+                throw std::invalid_argument("dimension mismatch: item has " + std::to_string(it.emb.size()) + ", tree expects " + std::to_string(dims_));
             entries_.push_back({it.id, normalized_ ? normalize(it.emb) : it.emb});
         }
 
@@ -39,7 +41,7 @@ public:
     std::vector<Neighbor> knn(const std::vector<float>& query, int k) const {
         if (k <= 0) throw std::invalid_argument("k must be >= 1");
         if ((int)query.size() != dims_)
-            throw std::invalid_argument("dimension mismatch");
+            throw std::invalid_argument("dimension mismatch: query has " + std::to_string(query.size()) + ", tree expects " + std::to_string(dims_));
         if (!root_) return {};
 
         std::vector<float> q = normalized_ ? normalize(query) : query;
@@ -51,8 +53,9 @@ public:
         while (!heap.empty()) { out.push_back(heap.top()); heap.pop(); }
         std::sort(out.begin(), out.end());
 
-        if (normalized_)
+        if (normalized_) {
             for (auto& n : out) n.first = (n.first * n.first) / 2.0f;
+        }
         return out;
     }
 

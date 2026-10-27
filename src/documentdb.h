@@ -12,7 +12,7 @@
 namespace vdb {
 
 struct DocItem {
-    int         id;
+    int         id = 0;
     std::string title;
     std::string text;
     std::vector<float> emb;
@@ -27,7 +27,7 @@ public:
         std::lock_guard<std::mutex> lk(mu_);
         if (dims_ == 0) dims_ = (int)emb.size();
         if ((int)emb.size() != dims_)
-            throw std::invalid_argument("dimension mismatch");
+            throw std::invalid_argument("dimension mismatch: expected " + std::to_string(dims_) + ", got " + std::to_string(emb.size()));
 
         DocItem item{nextId_++, title, text, emb};
         store_[item.id] = item;
@@ -39,7 +39,7 @@ public:
     }
 
     std::vector<std::pair<float, DocItem>> search(const std::vector<float>& q,
-                                                   int k, float maxDist = 0.7f) {
+                                                   int k, float maxDist = 2.0f) {
         std::lock_guard<std::mutex> lk(mu_);
         if (store_.empty()) return {};
 
@@ -48,9 +48,10 @@ public:
                    : hnsw_.knn(q, k, 50);
 
         std::vector<std::pair<float, DocItem>> out;
-        for (auto& [d, id] : raw)
+        for (auto& [d, id] : raw) {
             if (store_.count(id) && d <= maxDist)
                 out.push_back({d, store_[id]});
+        }
         return out;
     }
 
@@ -60,6 +61,7 @@ public:
         store_.erase(id);
         bf_.remove(id);
         hnsw_.remove(id);
+        if (store_.empty()) dims_ = 0;
         return true;
     }
 
