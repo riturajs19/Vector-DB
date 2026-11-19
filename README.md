@@ -1,130 +1,131 @@
+# C++ Vector Database & Local RAG System
 
-# ⚡ C++ Vector Database & Local RAG System
-
-A custom in-memory **Vector Database** built from scratch in **C++17** (implementing **HNSW**, **KD-Tree**, and **Brute-Force** nearest-neighbor search), integrated with a **Local RAG Pipeline** powered by **Ollama** and an interactive **Streamlit** dashboard.
-
----
-
-## 📌 Overview
-
-Most RAG applications rely on black-box vector database libraries. This project builds both the **high-performance C++ vector indexing engine** and the **Python Retrieval-Augmented Generation (RAG) orchestration layer** from scratch:
-
-- **C++17 Vector Engine (`db.exe`)**: Exposes a thread-safe HTTP REST API for low-latency vector indexing and nearest-neighbor retrieval.
-- **Local AI & Embeddings (Ollama)**: Generates 768-dimensional semantic embeddings using `nomic-embed-text` and grounded answers using `llama3.2`—100% locally with zero API cost.
-- **Interactive Web UI (Streamlit)**: Provides live health monitoring, algorithm benchmarking, document ingestion, and context-backed Q&A.
+A high-performance, in-memory Vector Database built from scratch in C++17, paired with a Local Retrieval-Augmented Generation (RAG) pipeline powered by Ollama and an interactive Streamlit web interface.
 
 ---
 
-## ✨ Key Features
+## Overview
 
-- **Three Search Algorithms from Scratch**:
-  - **HNSW (Hierarchical Navigable Small World)**: Multi-layer proximity graph for fast $O(\log N)$ approximate nearest-neighbor search in high dimensions.
-  - **KD-Tree**: Balanced spatial partitioning tree for exact $O(\log N)$ search in low dimensions.
-  - **Brute-Force**: Exact $O(N)$ linear scan baseline.
-- **Multiple Distance Metrics**: Supports **Cosine**, **Euclidean ($L_2$)**, and **Manhattan ($L_1$)** similarity metrics.
-- **Hybrid RAG Storage (`DocumentDB`)**: Automatically switches between Brute-Force (for small collections) and HNSW (for larger document collections).
-- **Sliding-Window Document Chunking**: Splits long documents into 250-word chunks with 30-word overlap to preserve context across boundaries.
-- **Thread-Safe REST API**: Multithreaded C++ HTTP server protected with mutex locking (`std::lock_guard`).
+Modern Gen AI applications rely heavily on vector databases for semantic search and context retrieval. Rather than using pre-built vector database libraries, this project implements a custom multithreaded vector search engine in C++17 alongside an end-to-end Python RAG workflow.
+
+The system runs completely locally with zero external API costs, combining native C++ indexing speed with local Large Language Models.
 
 ---
 
-## 🏛️ System Architecture
+## Core Capabilities
 
-┌─────────────────────────────────────────────────────────────────┐
-│               Streamlit Web UI & RAG Layer (Python)             │
-│         (Demo Search  |  Document Ingestion  |  Ask AI)         │
-└───────────────┬─────────────────────────────────┬───────────────┘
-                │ HTTP REST (Port 8080)           │ HTTP REST (Port 11434)
-                ▼                                 ▼
-┌───────────────────────────────────┐ ┌───────────────────────────┐
-│   C++ VectorDB Server (db.exe)    │ │    Local Ollama Service   │
-│  • HNSW, KD-Tree & Brute-Force    │ │  • nomic-embed-text (768D)│
-│  • VectorDB (4D Benchmark Store)  │ │  • llama3.2 (Local LLM)   │
-│  • DocumentDB (768D RAG Store)    │ └───────────────────────────┘
-└───────────────────────────────────┘
+### 1. Custom C++ Vector Search Engine
+- **Multiple Indexing Algorithms**: Implements **HNSW (Hierarchical Navigable Small World)**, **KD-Tree**, and **Brute-Force** search from scratch.
+- **Distance Metrics**: Supports **Cosine Similarity**, **Euclidean ($L_2$)**, and **Manhattan ($L_1$)** distance calculations.
+- **Adaptive Indexing**: Dynamically switches between exact Brute-Force search for small collections and approximate HNSW graph search for larger document stores.
+- **Thread-Safe REST API**: Exposes concurrent HTTP endpoints on port `8080` using mutex-protected storage.
 
----
+### 2. Local RAG Pipeline
+- **Sliding-Window Chunking**: Splits long documents into 250-word segments with a 30-word overlap to preserve semantic continuity across boundaries.
+- **Semantic Embeddings**: Converts text chunks and user queries into 768-dimensional dense vectors using Ollama (`nomic-embed-text`).
+- **Context-Grounded Generation**: Retrieves the top-$k$ most relevant chunks from the C++ vector engine and generates accurate answers using `llama3.2`.
 
-## 📂 Project Structure
-
-├── src/
-│   ├── types.h          # Core vector and neighbor data structures
-│   ├── metrics.h        # Cosine, Euclidean, and Manhattan distance functions
-│   ├── bruteforce.h     # Exact linear scan search index
-│   ├── kdtree.h         # Balanced KD-Tree spatial index
-│   ├── hnsw.h           # Multi-layer HNSW graph index
-│   ├── vectordb.h       # Thread-safe multi-algorithm vector database
-│   └── documentdb.h     # Thread-safe 768D RAG document chunk database
-├── main.cpp             # C++ HTTP REST server (Port 8080)
-├── httplib.h            # Single-header C++ HTTP server library
-├── api_client.py        # Python REST client for the C++ VectorDB server
-├── ollama_client.py     # Python client for Ollama embeddings & LLM generation
-├── rag.py               # Document chunking, embedding, and RAG query pipeline
-├── app.py               # Streamlit web application
-├── build.bat            # Script to compile main.cpp into db.exe
-├── start.bat            # One-click launcher for C++ server + Streamlit UI
-├── test_system.py       # Automated REST API integration tests
-├── test_rag.py          # Automated end-to-end RAG pipeline tests
-└── requirements.txt     # Python dependencies
+### 3. Interactive Streamlit Interface
+- **Algorithm Benchmarking**: Insert custom vectors and compare retrieval results and distances across HNSW, KD-Tree, and Brute-Force side by side.
+- **Document Management**: Ingest articles or notes, view stored chunks, and manage the document index in real time.
+- **Explainable AI Q&A**: View generated answers alongside the exact source chunks and similarity distances retrieved from the database.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **Core Database Engine**: C++17, STL (`std::priority_queue`, `std::unordered_map`, `std::mutex`), `cpp-httplib`
-- **RAG & Backend**: Python 3.10+, `requests`
-- **Frontend UI**: Streamlit
-- **Local AI Models**: Ollama (`nomic-embed-text` for embeddings, `llama3.2` for LLM Q&A)
+- **Database Engine**: C++17, STL, `cpp-httplib`
+- **Backend & RAG**: Python 3.10+, `requests`
+- **Frontend**: Streamlit
+- **LLM & Embeddings**: Ollama (`llama3.2`, `nomic-embed-text`)
 
 ---
 
-## 🚀 Getting Started
+## Repository Structure
 
-### 1. Prerequisites
-- **Python 3.10+**
-- **Ollama** installed and running (https://ollama.com)
-- **G++ Compiler (MinGW-w64 / MSYS2)** *(only required if rebuilding `db.exe` from source)*
+- `src/types.h` — Core vector and neighbor data structures
+- `src/metrics.h` — Cosine, Euclidean, and Manhattan distance implementations
+- `src/bruteforce.h` — Exact linear scan nearest-neighbor search
+- `src/kdtree.h` — Balanced KD-Tree spatial partitioning index
+- `src/hnsw.h` — Multi-layer HNSW proximity graph index
+- `src/vectordb.h` — Thread-safe multi-algorithm vector store
+- `src/documentdb.h` — Thread-safe document chunk store for RAG
+- `main.cpp` — C++ HTTP REST server implementation
+- `api_client.py` — Python client wrapper for the C++ REST API
+- `ollama_client.py` — Python interface for local Ollama models
+- `rag.py` — Text chunking, embedding, and retrieval-augmented generation logic
+- `app.py` — Streamlit web application
+- `build.bat` — Windows build script to compile `main.cpp` into `db.exe`
+- `start.bat` — Startup script to launch the C++ server and Streamlit UI
+- `test_system.py` — Automated integration tests for REST endpoints
+- `test_rag.py` — End-to-end RAG verification script
 
-### 2. Install Python Dependencies
+---
+
+## Installation & Setup
+
+### Prerequisites
+- Python 3.10 or higher
+- [Ollama](https://ollama.com) installed and running locally
+- MinGW-w64 / MSYS2 `g++` compiler *(optional, only needed to recompile `db.exe`)*
+
+### 1. Install Python Dependencies
+```bash
 pip install -r requirements.txt
+```
 
-### 3. Pull Required Ollama Models
+### 2. Download Required Ollama Models
+```bash
 ollama pull nomic-embed-text
 ollama pull llama3.2
+```
 
-### 4. Run the Application
-Launch both the C++ Vector Database server and the Streamlit UI with one command:
+### 3. Launch the Application
+Run the startup script to launch both the C++ server and the Streamlit interface:
+```cmd
 start.bat
+```
 
-Or start them manually in two terminals:
-# Terminal 1: Start C++ VectorDB Server (http://localhost:8080)
+Alternatively, run the services manually in two separate terminals:
+
+**Terminal 1 — Start the C++ Vector Database Server:**
+```bash
 .\db.exe
+```
 
-# Terminal 2: Start Streamlit Web UI (http://localhost:8501)
+**Terminal 2 — Start the Streamlit Web Interface:**
+```bash
 streamlit run app.py
+```
+
+### 4. Rebuild C++ Server from Source (Optional)
+```cmd
+build.bat
+```
 
 ---
 
-## 🔌 REST API Endpoints (C++ Server — Port 8080)
+## API Reference (Port 8080)
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/status` | Returns vector counts and dimensions for both databases |
-| `GET` | `/items` | Lists all stored vectors in the 4D benchmark database |
-| `POST` | `/insert` | Inserts a new vector with metadata and category |
-| `GET` | `/search` | Queries top-k nearest neighbors using `hnsw`, `kdtree`, or `bruteforce` |
-| `DELETE` | `/delete/:id` | Deletes a vector by ID from the benchmark database |
-| `POST` | `/doc/insert` | Inserts a document chunk and its 768D embedding |
-| `POST` | `/doc/search` | Retrieves top-k most relevant document chunks for RAG |
-| `GET` | `/doc/list` | Lists all stored document chunks |
-| `DELETE` | `/doc/delete/:id` | Deletes a document chunk by ID |
+| `GET` | `/status` | Health check returning vector counts and dimensions |
+| `GET` | `/items` | Retrieve all vectors in the benchmark store |
+| `POST` | `/insert` | Insert a vector with metadata and category |
+| `GET` | `/search` | Query top-$k$ nearest neighbors (`algo`: `hnsw`, `kdtree`, `bruteforce`) |
+| `DELETE` | `/delete/:id` | Remove a vector by ID |
+| `POST` | `/doc/insert` | Store a document chunk and its 768D embedding |
+| `POST` | `/doc/search` | Retrieve top-$k$ matching chunks for a query embedding |
+| `GET` | `/doc/list` | List all stored document chunks |
+| `DELETE` | `/doc/delete/:id` | Delete a document chunk by ID |
 
 ---
 
-## 🧪 Running Tests
+## Testing
 
-# Test all C++ VectorDB REST endpoints
+With the C++ server and Ollama running, execute the test suites to validate all endpoints and the RAG pipeline:
+
+```bash
 python test_system.py
-
-# Test end-to-end document chunking, embedding, retrieval, and LLM answering
 python test_rag.py
+```
